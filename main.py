@@ -35,16 +35,68 @@ def GETHandler(args):
         print("you passed a route that doesnt exist")
 
 def PUSHHandler(args):
-    pass
+    PUSHRoutes = {
+        "tool" : "/tool",
+        "code" : "/snippet",
+        "codecategory" : "/c-category",
+        "doccategory" : "/d-category",
+        "doc" : "/doc",
+        "user" : "/user"
+    }
+    schemas = {
+        "toolSchema" : {
+        "toolName" : {"type" : "str", "required" : True}
+    },
+        "codeCategorySchema" : {
+        "categoryName" : {"type" : "str", "required" : True}
+    },
+        "docCategorySchema" : {
+        "categoryName" : {"type" : "str", "required" : True}
+    },
+        "snippetSchema" : {
+        "snippetName" : {"type" : "str", "required": True},
+        "snippet" : {"type" : "str", "required" : True},
+        "tool" : {"type" : "str", "required" : True },
+        "categories" : {"type" : "arr", "required" : True}
+    },
+        "docSchema" : {
+        "docName" : {"type" : "str", "required" : True},
+        "tool" : {"type" : "str", "required" : True},
+        "category" : {"type" : "str", "required" : True},
+        "docText" : {"type" : "str", "required" : True}
+    },
+        "userSchema" : {
+            "name" : {"type" : "str", "required" : True},
+            "email" : {"type" : "str", "required" : True},
+            "password" : {"type" : "str", "required" : True}
+        }
+    }
+    
+
+    if(args[0] in PUSHRoutes.keys()):
+        routePartOne = PUSHRoutes[args[0].lower()]
+        if(args[1] in schemas.keys()):
+            chosenSchema = schemas[args[1]]
+            if(len(args) == 2):
+            # Get input according to schema
+                pass
+            else:
+                # parse args for input
+                schemaKeys = chosenSchema.keys()
+                j = 2
+                for i in schemaKeys:
+                    chosenSchema[i] = args[j]
+                    j += 1
+                r = s.post(API_URL+"/dev" + routePartOne, data=chosenSchema)
+                print(r)
+    else:
+        print("gotta give me a route thats REAL sorry")
 
 def UpdateHandler(args):
     pass
 
 def logIn(args):
-    print(args)
-    print(len(args))
     if(len(args) >= 2):
-        print("hi")
         email = args[0]
         password = args[1]
 
@@ -52,6 +104,7 @@ def logIn(args):
         output = res.json()
         output = output['data']
         if(output['message'] == 'Log-In Successful'):
+            print('Logged In!')
             s.headers.update({'authorization' : f'Bearer {output["token"]}'})
 
 
@@ -64,7 +117,7 @@ def getInput():
     if(inp == "h" or inp == "help"):
         print(
 """(H)elp to bring up this menu
-(G)et {collection} to GET for a certain thing. use '(G)et help'  for all options
+(G)et {colection} to GET for a certain thing. use '(G)et help'  for all options
 (P)ush {collection} to PUSH for a certain thing. use '(P)ush help' for all options.
 (U)pdate {collection} to PATCH for a certain thing. use '(U)pdate help' for all options.
 
@@ -79,8 +132,8 @@ def getInput():
         GETHandler(args)
         getInput()
     elif(inp == "p" or inp == "push"):
-        print("PUSHING")
         # this is where id put my PUSH code if i HAD ANY!
+        PUSHHandler(args)
         getInput()
     elif(inp == "u" or inp == "update"):
         print("UPDATING")
@@ -92,7 +145,6 @@ def getInput():
         initTUI()
     elif(inp == "l" or inp == "login"):
         # Log In. eventually.
-        print("LOGGING IN")
         print(args)
         logIn(args)
         getInput()
