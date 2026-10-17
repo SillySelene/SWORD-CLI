@@ -1,6 +1,7 @@
 import requests
 import json
 import curses
+import time
 
 s = requests.Session()
 
@@ -10,6 +11,22 @@ health_check = s.get(API_URL + "/health")
 
 print(health_check.text)
 
+def cycleOptions(currSelection, selections, win):
+    win.move(1, 1)
+    win.addstr(selections[currSelection])
+
+def tuiGET():
+    pass
+
+def tuiPUSH():
+    pass
+
+def tuiPATCH():
+    pass
+
+def tuiDELETE():
+    pass
+
 def initTUI():
     # initialize the TUI pretty please
     std_scr = curses.initscr()
@@ -18,10 +35,29 @@ def initTUI():
     std_scr.keypad(True)
     # all the really fun curses init stuff ^
 
-    selection= curses.newwin(10, 10, 5, 5)
-    selection.addstr("HAAHAHAH")
+    selections = ["GET", "PUSH", "PATCH", "DELETE"]
+    currSelection = 0
+    win = curses.newwin(3, 25, int(curses.LINES/2), int((curses.COLS/2) - 12.5 ))
+    win.box()
+    win.move(1, 1)
+    win.addstr(selections[currSelection])
 
-    selection.getkey()
+    while(win.getkey() == '\t'):
+        if currSelection >= 3:
+            currSelection = -1
+        win.move(1, 1)
+        win.addstr(" " * 23)
+        currSelection += 1
+        cycleOptions(currSelection, selections, win)
+    
+    callSelection = {
+        "GET" : tuiGET,
+        "PUSH" : tuiPUSH,
+        "PATCH" : tuiPATCH,
+        "DELETE" : tuiDELETE
+    }
+    callSelection[selections[currSelection]]()
+    time.sleep(5)
 
     std_scr.keypad(False)
     curses.nocbreak()
