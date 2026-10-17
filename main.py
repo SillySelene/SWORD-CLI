@@ -12,7 +12,21 @@ print(health_check.text)
 
 def initTUI():
     # initialize the TUI pretty please
-    pass
+    std_scr = curses.initscr()
+    curses.noecho()
+    curses.cbreak()
+    std_scr.keypad(True)
+    # all the really fun curses init stuff ^
+
+    selection= curses.newwin(10, 10, 5, 5)
+    selection.addstr("HAAHAHAH")
+
+    selection.getkey()
+
+    std_scr.keypad(False)
+    curses.nocbreak()
+    curses.echo()
+    curses.endwin()
 
 def GETHandler(args):
     GETRoutes = {       
@@ -20,19 +34,23 @@ def GETHandler(args):
         "code" : "/code",    
         "codecategory" : "/code/category",
         "codebytoolid" :  f"/code/t/{ f'/{args[1]}' if len(args) > 1 else ''}",
-        "codebycategorylid" : f"/code/c{ f'/{args[1]}' if len(args) > 1 else ''}",
+        "codebycategoryid" : f"/code/c{ f'/{args[1]}' if len(args) > 1 else ''}",
         "doc" : f"/doc{ f'/{args[1]}' if len(args) > 1 else ''}",
         "doccategory" : "/doc/category",
         "docbytoolid" :  f"/code/t/{ f'/{args[1]}' if len(args) > 1 else ''}",
         "docbycategoryid" : f"/code/c{ f'/{args[1]}' if len(args) > 1 else ''}",
         "dev" : "/dev"
     }
-    if args[0] in GETRoutes.keys():
+    if args[0].lower() in GETRoutes.keys():
         routePartOne = GETRoutes[args[0].lower()]
         r = s.get(API_URL + routePartOne)
-        print(r.text) 
+        print(r.text)
+        return r.json()
     else:
         print("you passed a route that doesnt exist")
+
+# Games, infinite games? but no games?
+# Okay....
 
 def PUSHHandler(args):
     PUSHRoutes = {
@@ -40,36 +58,29 @@ def PUSHHandler(args):
         "code" : "/snippet",
         "codecategory" : "/c-category",
         "doccategory" : "/d-category",
-        "doc" : "/doc",
-        "user" : "/user"
-    }
+        "doc" : "/doc",    }
     schemas = {
-        "toolSchema" : {
+        "toolschema" : {
         "toolName" : {"type" : "str", "required" : True}
     },
-        "codeCategorySchema" : {
+        "codecategoryschema" : {
         "categoryName" : {"type" : "str", "required" : True}
     },
-        "docCategorySchema" : {
+        "doccategoryschema" : {
         "categoryName" : {"type" : "str", "required" : True}
     },
-        "snippetSchema" : {
+        "snippetschema" : {
         "snippetName" : {"type" : "str", "required": True},
         "snippet" : {"type" : "str", "required" : True},
         "tool" : {"type" : "str", "required" : True },
         "categories" : {"type" : "arr", "required" : True}
     },
-        "docSchema" : {
+        "docschema" : {
         "docName" : {"type" : "str", "required" : True},
         "tool" : {"type" : "str", "required" : True},
         "category" : {"type" : "str", "required" : True},
         "docText" : {"type" : "str", "required" : True}
     },
-        "userSchema" : {
-            "name" : {"type" : "str", "required" : True},
-            "email" : {"type" : "str", "required" : True},
-            "password" : {"type" : "str", "required" : True}
-        }
     }
     
 
@@ -88,24 +99,44 @@ def PUSHHandler(args):
                     chosenSchema[i] = args[j]
                     j += 1
                 r = s.post(API_URL+"/dev" + routePartOne, data=chosenSchema)
-                print(r)
+                if(r.status_code == 201):
+                    print(args[0] + " Made!")
+                else:
+                    print("failure, couldnt make " + args[0])
     else:
         print("gotta give me a route thats REAL sorry")
 
-def UpdateHandler(args):
-    pass
+def PATCHHandler(args):
+    getCurrent = GETHandler(args)
+    if(getCurrent):
+        data = getCurrent['data']
+        j = 1
+        returnObj = {}
+        for arg in args[1:]:
+            if(arg == "."):
+                returnObj[data.keys()[j]] = data[data.keys()[j]]
+            else:
+                returnObj[data.keys()[j]] = arg
+            j += 1
+        r = s.post(API_URL + "/" + args[0], data=returnObj)
+        if(r.status_code == 201):
+            print("update successful")
+        else:
+            print("error: " + r.json())
 
 def logIn(args):
     if(len(args) >= 2):
         email = args[0]
         password = args[1]
-
         res = s.post(API_URL + "/login", data={"email" : email, "password" : password})
-        output = res.json()
-        output = output['data']
-        if(output['message'] == 'Log-In Successful'):
-            print('Logged In!')
-            s.headers.update({'authorization' : f'Bearer {output["token"]}'})
+        if res.status_code != 401:
+            output = res.json()
+            output = output['data']
+            if(output['message'] == 'Log-In Successful'):
+                print('Logged In!')
+                s.headers.update({'authorization' : f'Bearer {output["token"]}'})
+
+
 
 
 def getInput():
@@ -136,21 +167,21 @@ def getInput():
         PUSHHandler(args)
         getInput()
     elif(inp == "u" or inp == "update"):
-        print("UPDATING")
+        PATCHHandler(args)
         # this is where id ... update
         getInput()
     elif(inp == "t" or inp == "tui"):
-        print("TUI")
         # init TUI mode. first: make TUI mode.
         initTUI()
     elif(inp == "l" or inp == "login"):
         # Log In. eventually.
-        print(args)
         logIn(args)
         getInput()
+    elif(inp == "e" or inp == "exit"):
+        pass
 
 
 
 if health_check.json() == {"status":"alive"}:
-    print("enter help for help.")
+    print("enter help for help. and e to exit")
     getInput()
